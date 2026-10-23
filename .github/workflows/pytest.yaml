@@ -69,7 +69,7 @@ jobs:
 
       - name: Run tests
         env:
-          BABY_BUDDY_HOST: http://localhost
+          BABY_BUDDY_HOST: http://127.0.0.1
           BABY_BUDDY_PORT: 8000
           API_KEY: ${{ env.api_key }}
         run: |
