@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 import os
 from typing import Final
-
 from zoneinfo import ZoneInfo
 
 from custom_components.babybuddy.const import (
