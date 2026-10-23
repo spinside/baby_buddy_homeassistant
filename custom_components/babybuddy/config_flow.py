@@ -7,6 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import (
     CONF_API_KEY,
     CONF_HOST,
@@ -19,7 +20,6 @@ from homeassistant.const import (
     UnitOfVolume,
 )
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -54,10 +54,10 @@ class BabyBuddyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+        entry: config_entries.ConfigEntry,
     ) -> BabyBuddyOptionsFlowHandler:
         """Get the options flow for this handler."""
-        return BabyBuddyOptionsFlowHandler(config_entry)
+        return BabyBuddyOptionsFlowHandler(entry)
 
     def __init__(self) -> None:
         """Initiate config flow."""
@@ -65,9 +65,9 @@ class BabyBuddyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle a flow initialized by the user."""
-        errors = {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
             await self.async_set_unique_id(
@@ -102,16 +102,17 @@ class BabyBuddyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Perform reauth upon an API authentication error."""
         self._reauth_unique_id = self.context["unique_id"]
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Dialog that informs the user that reauth is required."""
-        errors = {}
+        errors: dict[str, str] = {}
+
         existing_entry = await self.async_set_unique_id(self._reauth_unique_id)
         if user_input is not None and existing_entry is not None:
             user_input[CONF_HOST] = existing_entry.data[CONF_HOST]
@@ -151,25 +152,25 @@ class BabyBuddyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 class BabyBuddyOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle babybuddy options."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, entry: config_entries.ConfigEntry) -> None:
         """Init object."""
-        self.config_entry = config_entry
+        self.entry = entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Manage babybuddy options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options = {
+        options: dict[vol.Optional, Any] = {
             vol.Optional(
                 TEMPERATURE,
-                default=self.config_entry.options.get(TEMPERATURE, None),
+                default=self.entry.options.get(TEMPERATURE, None),
             ): vol.In([UnitOfTemperature.CELSIUS, UnitOfTemperature.FAHRENHEIT]),
             vol.Optional(
                 CONF_WEIGHT_UNIT,
-                default=self.config_entry.options.get(CONF_WEIGHT_UNIT, None),
+                default=self.entry.options.get(CONF_WEIGHT_UNIT, None),
             ): vol.In(
                 [
                     UnitOfMass.KILOGRAMS,
@@ -180,11 +181,11 @@ class BabyBuddyOptionsFlowHandler(config_entries.OptionsFlow):
             ),
             vol.Optional(
                 CONF_FEEDING_UNIT,
-                default=self.config_entry.options.get(CONF_FEEDING_UNIT, None),
+                default=self.entry.options.get(CONF_FEEDING_UNIT, None),
             ): vol.In([UnitOfVolume.MILLILITERS, UnitOfVolume.FLUID_OUNCES]),
             vol.Optional(
                 CONF_SCAN_INTERVAL,
-                default=self.config_entry.options.get(
+                default=self.entry.options.get(
                     CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                 ),
             ): cv.positive_int,
